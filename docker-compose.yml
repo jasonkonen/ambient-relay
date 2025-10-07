@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  ambient-relay:
+    build: .
+    container_name: ambient-relay
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-3000}:3000"
+    environment:
+      # Required: Ambient Weather API credentials
+      APPLICATION_KEY: ${APPLICATION_KEY}
+      API_KEY: ${API_KEY}
+      
+      # Optional: Configuration
+      POLL_INTERVAL_MINUTES: ${POLL_INTERVAL_MINUTES:-5}
+      HTTP_PORT: 3000
+      DEVICE_LOCATION: ${DEVICE_LOCATION:-}
+      
+      # PostgreSQL configuration (internal)
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-ambient_weather}
+      POSTGRES_USER: ${POSTGRES_USER:-ambient}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      # Persist PostgreSQL data
+      - postgres-data:/var/lib/postgresql/data
+      # Persist PostgreSQL logs
+      - postgres-logs:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres-data:
+    driver: local
+  postgres-logs:
+    driver: local
